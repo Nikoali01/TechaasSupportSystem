@@ -35,7 +35,6 @@ with st.sidebar:
     for chat_name in chat_names:
         cols = st.columns([4, 1])
         if cols[0].button(chat_name):
-            print("test")
             st.session_state.current_chat = chat_name
             st.rerun()
 
@@ -97,4 +96,3 @@ if not st.session_state.chats[st.session_state.current_chat]['rated']:
                 st.rerun()
 else:
     st.info("Вы уже оценили этот чат, поэтому больше не можете отправлять сообщения.")
-
