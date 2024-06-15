@@ -40,12 +40,15 @@ with st.sidebar:
 
         if cols[1].button("❌", key=f"del_{chat_name}"):
             if len(st.session_state.chats) > 1:
-                del st.session_state.chats[chat_name]
+                all_chats = list(st.session_state.chats)
+                index_to_delete = all_chats.index(chat_name)
+                if index_to_delete > 0:
+                    prev_key = all_chats[index_to_delete - 1]
+                else:
+                    prev_key = all_chats[1]
                 if st.session_state.current_chat == chat_name:
-                    if chat_names:
-                        st.session_state.current_chat = chat_names[0] if chat_names[0] != chat_name else first_chat
-                    else:
-                        st.session_state.current_chat = first_chat
+                    st.session_state.current_chat = prev_key
+                del st.session_state.chats[chat_name]
                 st.rerun()
 
     if st.button("Создать новый чат"):
