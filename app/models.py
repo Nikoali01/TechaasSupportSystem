@@ -27,14 +27,23 @@ class Ticket(BaseModel):
 
 class StartTicketRequest(BaseModel):
     user_id: str
+    access_token: str
 
 
 class CloseTicketRequest(BaseModel):
     user_rating: int
-    ticket_id : str
+    ticket_id: str
+    access_token: str
 
 
 class AddMessageRequest(BaseModel):
     user_id: str
     ticket_id: str
     message: str
+    access_token: str
+
+
+class GetTicketAnswered(BaseModel):
+    user_id: str
+    ticket_id: str
+    access_token: str
