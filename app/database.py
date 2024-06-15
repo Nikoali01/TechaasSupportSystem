@@ -2,7 +2,6 @@ import time
 from pymongo import MongoClient
 from bson import ObjectId
 
-# Initialize MongoDB connection
 uri = "mongodb://localhost:27017"
 client = MongoClient(uri)
 db = client['requests']
@@ -10,9 +9,14 @@ collection = db['requestsCollection']
 
 
 def get_next_ticket_id():
-    max_ticket = collection.find_one(sort=[("ticket_id", -1)])
-    if max_ticket and "ticket_id" in max_ticket:
-        next_ticket_id = int(max_ticket["ticket_id"]) + 1
+    max_ticket = collection.aggregate([
+        {"$addFields": {"ticket_id_int": {"$toInt": "$ticket_id"}}},
+        {"$sort": {"ticket_id_int": -1}},
+        {"$limit": 1}
+    ])
+    max_ticket = list(max_ticket)  # Convert the cursor to a list
+    if max_ticket:
+        next_ticket_id = int(max_ticket[0]["ticket_id"]) + 1
     else:
         next_ticket_id = 1
     return str(next_ticket_id)
@@ -22,7 +26,7 @@ def create_ticket(ticket_id, user_id):
     ticket = {
         "ticket_id": ticket_id,
         "user_id": user_id,
-        "is_answered": True,
+        "is_answered": False,
         "started_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "closed_at": None,
         "status": "Opened",

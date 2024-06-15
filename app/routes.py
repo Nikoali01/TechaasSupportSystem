@@ -16,6 +16,7 @@ async def return_ticket(request: StartTicketRequest):
         raise HTTPException(status_code=403, detail="You are not allowed to do this action")
     else:
         new_id = get_next_ticket_id()
+        print(new_id)
         create_ticket(new_id, request.user_id)
         return {"ticket_id": new_id}
 
@@ -73,7 +74,7 @@ async def add_message(request: AddMessageRequest):
             raise HTTPException(status_code=404, detail="Ticket not found")
 
 
-@router.get("/ticket/get_updates")
+@router.post("/ticket/get_updates")
 async def get_updates(request: GetTicketAnswered):
     if request.access_token not in auth_tokens:
         raise HTTPException(status_code=403, detail="You are not allowed to do this action")
@@ -82,7 +83,7 @@ async def get_updates(request: GetTicketAnswered):
         if ticket:
             if ticket["status"] != "Closed":
                 if ticket["user_id"] != request.user_id:
-                    raise HTTPException(status_code=403, detail="User is not allowed to add messages to this ticket")
+                    raise HTTPException(status_code=403, detail="User is not allowed to check messages from this ticket")
                 else:
                     if not ticket["is_answered"]:
                         raise HTTPException(status_code=204, detail="Answer is not delivered yet")
