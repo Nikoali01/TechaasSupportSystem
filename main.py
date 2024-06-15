@@ -3,6 +3,7 @@ import random
 import uuid
 import time
 from streamlit_star_rating import st_star_rating
+from streamlit import session_state as ss
 
 
 def response_generator():
@@ -22,85 +23,94 @@ def response_generator():
 st.title("Чат техподдержки")
 
 first_chat = str(uuid.uuid4())
-if "chats" not in st.session_state:
-    st.session_state.chats = {first_chat: {'rated': False, 'is_responsing': False, 'messages': []}}
-if "current_chat" not in st.session_state:
-    st.session_state.current_chat = first_chat
-if "rated" not in st.session_state:
-    st.session_state.rated = False
+if "chats" not in ss:
+    ss.chats = {first_chat: {'rated': False, 'messages': []}}
+if "current_chat" not in ss:
+    ss.current_chat = first_chat
+if "chat_disabled" not in ss:
+    ss.chat_disabled = False
+if "rated" not in ss:
+    ss.rated = False
 
 with st.sidebar:
     st.header("Ваши чаты")
-    chat_names = list(st.session_state.chats.keys())
+    chat_names = list(ss.chats.keys())
 
     for chat_name in chat_names:
         cols = st.columns([4, 1])
         if cols[0].button(chat_name):
-            st.session_state.current_chat = chat_name
+            ss.current_chat = chat_name
             st.rerun()
-
-        if cols[1].button("❌", key=f"del_{chat_name}"):
-            if len(st.session_state.chats) > 1:
-                all_chats = list(st.session_state.chats)
-                index_to_delete = all_chats.index(chat_name)
-                if index_to_delete > 0:
-                    prev_key = all_chats[index_to_delete - 1]
-                else:
-                    prev_key = all_chats[1]
-                if st.session_state.current_chat == chat_name:
-                    st.session_state.current_chat = prev_key
-                del st.session_state.chats[chat_name]
-                st.rerun()
+        if len(ss.chats) > 1:
+            if cols[1].button("❌", key=f"del_{chat_name}"):
+                if len(ss.chats) > 1:
+                    all_chats = list(ss.chats)
+                    index_to_delete = all_chats.index(chat_name)
+                    if index_to_delete > 0:
+                        prev_key = all_chats[index_to_delete - 1]
+                    else:
+                        prev_key = all_chats[1]
+                    if ss.current_chat == chat_name:
+                        ss.current_chat = prev_key
+                    del ss.chats[chat_name]
+                    st.rerun()
 
     if st.button("Создать новый чат"):
         new_chat_name = f"{uuid.uuid4()}"
-        st.session_state.chats[new_chat_name] = {'rated': False, 'is_responsing': False, 'messages': []}
-        st.session_state.current_chat = new_chat_name
+        ss.chats[new_chat_name] = {'rated': False, 'messages': []}
+        ss.current_chat = new_chat_name
         st.rerun()
 
-st.subheader(f"Текущий чат: {st.session_state.current_chat}")
+st.subheader(f"Текущий чат: {ss.current_chat}")
 
-for message in st.session_state.chats[st.session_state.current_chat]['messages']:
+for message in ss.chats[ss.current_chat]['messages']:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if not st.session_state.chats[st.session_state.current_chat]['rated']:
-    prompt = st.chat_input("Ваше сообщение", disabled=st.session_state.chats[st.session_state.current_chat]["is_responsing"])
-    if prompt:
-        st.session_state.chats[st.session_state.current_chat]['messages'].append(
-            {"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+if not ss.chats[ss.current_chat]['rated']:
+    if prompt := st.chat_input("Ваше сообщение", disabled=ss.chat_disabled) or ss.chat_disabled:
+        if not ss.chat_disabled:
+            ss.chats[ss.current_chat]['messages'].append(
+                {"role": "user", "content": prompt})
+            with st.chat_message("user"):
+                ss.chat_disabled = True
+                st.markdown(prompt)
+                st.rerun()
 
         with st.chat_message("assistant"):
-            st.session_state.chats[st.session_state.current_chat]['is_responsing'] = True
-            time.sleep(1)
+            with st.spinner("Thinking..."):
+                time.sleep(2)
             response_container = st.empty()
             response = ""
             for chunk in response_generator():
                 response_container.markdown(response + chunk)
                 response += chunk
-            st.session_state.chats[st.session_state.current_chat]['messages'].append(
+            ss.chat_disabled = False
+            print("Acaseacr", ss.chat_disabled)
+            ss.chats[ss.current_chat]['messages'].append(
                 {"role": "assistant", "content": response})
-            # print(st.session_state.is_responsing)
-            st.session_state.chats[st.session_state.current_chat]['is_responsing'] = False
+            st.rerun()
 
-    assistant_responses = [msg for msg in st.session_state.chats[st.session_state.current_chat]['messages'] if
+
+else:
+    st.chat_input("Ваше сообщение", disabled=True)
+    st.info("Вы уже оценили этот чат, поэтому больше не можете отправлять сообщения.")
+
+if not ss.chats[ss.current_chat]['rated']:
+    assistant_responses = [msg for msg in ss.chats[ss.current_chat]['messages'] if
                            msg["role"] == "assistant"]
-
     if assistant_responses:
 
         def end_dialog(stars):
             if stars:
-                st.session_state.chats[st.session_state.current_chat]['messages'].append(
+                ss.chats[ss.current_chat]['messages'].append(
                     {"role": "user", "content": f"Ваша оценка диалогу: {stars}"}
                 )
-                st.session_state.chats[st.session_state.current_chat]['rated'] = True
-                st.balloons()
+                ss.chats[ss.current_chat]['rated'] = True
                 st.rerun()
 
 
-        stars = st_star_rating(
+        st_star_rating(
             "Оцените ответ системы:",
             maxValue=5,
             defaultValue=0,
@@ -108,6 +118,3 @@ if not st.session_state.chats[st.session_state.current_chat]['rated']:
             emoticons=True,
             on_click=end_dialog
         )
-
-else:
-    st.info("Вы уже оценили этот чат, поэтому больше не можете отправлять сообщения.")
