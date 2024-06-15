@@ -23,7 +23,7 @@ st.title("Чат техподдержки")
 
 first_chat = str(uuid.uuid4())
 if "chats" not in st.session_state:
-    st.session_state.chats = {first_chat: {'rated': False, 'messages': []}}
+    st.session_state.chats = {first_chat: {'rated': False, 'is_responsing': False, 'messages': []}}
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = first_chat
 if "rated" not in st.session_state:
@@ -54,7 +54,7 @@ with st.sidebar:
 
     if st.button("Создать новый чат"):
         new_chat_name = f"{uuid.uuid4()}"
-        st.session_state.chats[new_chat_name] = {'rated': False, 'messages': []}
+        st.session_state.chats[new_chat_name] = {'rated': False, 'is_responsing': False, 'messages': []}
         st.session_state.current_chat = new_chat_name
         st.rerun()
 
@@ -65,14 +65,16 @@ for message in st.session_state.chats[st.session_state.current_chat]['messages']
         st.markdown(message["content"])
 
 if not st.session_state.chats[st.session_state.current_chat]['rated']:
-    prompt = st.chat_input("Ваше сообщение")
+    prompt = st.chat_input("Ваше сообщение", disabled=st.session_state.chats[st.session_state.current_chat]["is_responsing"])
     if prompt:
-        print(prompt)
-        st.session_state.chats[st.session_state.current_chat]['messages'].append({"role": "user", "content": prompt})
+        st.session_state.chats[st.session_state.current_chat]['messages'].append(
+            {"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
 
         with st.chat_message("assistant"):
+            st.session_state.chats[st.session_state.current_chat]['is_responsing'] = True
+            time.sleep(1)
             response_container = st.empty()
             response = ""
             for chunk in response_generator():
@@ -80,6 +82,8 @@ if not st.session_state.chats[st.session_state.current_chat]['rated']:
                 response += chunk
             st.session_state.chats[st.session_state.current_chat]['messages'].append(
                 {"role": "assistant", "content": response})
+            # print(st.session_state.is_responsing)
+            st.session_state.chats[st.session_state.current_chat]['is_responsing'] = False
 
     assistant_responses = [msg for msg in st.session_state.chats[st.session_state.current_chat]['messages'] if
                            msg["role"] == "assistant"]
