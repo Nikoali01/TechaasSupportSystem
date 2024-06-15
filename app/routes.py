@@ -1,7 +1,8 @@
+import time
+
 from fastapi import APIRouter, HTTPException
-from app.database import collection, get_next_ticket_id, create_ticket
-from bson import ObjectId
-from app.models import Ticket, StartTicketRequest, CloseTicketRequest
+from app.database import get_next_ticket_id, create_ticket, find_ticket, update_ticket, add_ticket_message, change_ticket_answered
+from app.models import Ticket, StartTicketRequest, CloseTicketRequest, AddMessageRequest
 
 router = APIRouter()
 
@@ -15,33 +16,54 @@ async def return_ticket(request: StartTicketRequest):
 
 @router.get("/ticket/{ticket_id}")
 async def get_ticket(ticket_id: str):
-    ticket = collection.find_one({"ticket_id": ticket_id})
-    print(ticket)
+    ticket = find_ticket(ticket_id)
     if ticket:
         return Ticket(**ticket)
     else:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
 
-@router.patch("/ticket/{ticket_id}/close")
-async def close_ticket(ticket_id: str, request: CloseTicketRequest):
-    ticket = collection.find_one({"ticket_id": ticket_id})
-    print(ticket)
+@router.patch("/ticket/close")
+async def close_ticket(request: CloseTicketRequest):
+    ticket = find_ticket(request.ticket_id)
     if ticket:
-        collection.update_one(
-            {"_id": ObjectId(ticket["_id"])},
-            {"$set": {"status": "Closed", "user_rating": request.user_rating}}
-        )
+        update_ticket(request.ticket_id, {"status": "Closed", "user_rating": request.user_rating})
         return {"message": "Ticket closed successfully"}
     else:
         raise HTTPException(status_code=404, detail="Ticket not found")
 
 
-@router.post("/ticket/{ticket_id}/add_message")
-async def add_message(ticket_id: str, message: dict):
-    ticket = collection.find_one({"ticket_id": ticket_id})
+@router.post("/ticket/add_message")
+async def add_message(request: AddMessageRequest):
+    ticket = find_ticket(request.ticket_id)
+    if ticket["user_id"] != request.user_id:
+        raise HTTPException(status_code=403, detail="User is not allowed to add messages to this ticket")
+    try:
+        last_message_id = ticket["messages"][-1]["message_id"]
+    except Exception:
+        last_message_id = "0"
     if ticket:
-        collection.update_one({"_id": ObjectId(ticket["_id"])}, {"$push": {"messages": message}})
+        message = {
+            "from_": "user",
+            "to_": "ai",
+            "content": request.message,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "message_id": str(int(last_message_id) + 1)
+        }
+        add_ticket_message(request.ticket_id, message)
+        change_ticket_answered(request.ticket_id, False)
         return {"message": "Message added successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="Ticket not found")
+
+
+@router.get("/ticket/get_updates")
+async def get_updates(ticket_id: str):
+    ticket = find_ticket(ticket_id)
+    if ticket:
+        if not ticket["is_answered"]:
+            raise HTTPException(status_code=204, detail="Answer is not delivered yet")
+        else:
+            return {"answer": ticket["messages"][len(ticket["messages"]) - 1]["content"]}
     else:
         raise HTTPException(status_code=404, detail="Ticket not found")

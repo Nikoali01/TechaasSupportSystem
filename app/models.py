@@ -14,6 +14,7 @@ class Message(BaseModel):
 class Ticket(BaseModel):
     ticket_id: str
     user_id: str
+    is_answered: bool
     started_at: datetime
     closed_at: Optional[datetime]
     status: str
@@ -30,3 +31,10 @@ class StartTicketRequest(BaseModel):
 
 class CloseTicketRequest(BaseModel):
     user_rating: int
+    ticket_id : str
+
+
+class AddMessageRequest(BaseModel):
+    user_id: str
+    ticket_id: str
+    message: str
