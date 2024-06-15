@@ -921,6 +921,19 @@ files = [
 ]
 
 [[package]]
+name = "st-star-rating"
+version = "0.0.6"
+description = "Streamlit Component for Star Ratings"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "st_star_rating-0.0.6-py3-none-any.whl", hash = "sha256:238e31d531df34a8e15eebb348cbed953c9c1689889233457c8e67846b073d79"},
+]
+
+[package.dependencies]
+streamlit = ">=0.63"
+
+[[package]]
 name = "streamlit"
 version = "1.35.0"
 description = "A faster way to build and share data apps"
@@ -1098,4 +1111,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "9146e4fbb8be048bf44b8a85a0879f224de80ff9693c3044300ebe92118da1d9"
+content-hash = "0467bc2e38c70831f41a4398c99ac5646af33f520baa2a3ba6c7b0b50e050cfb"

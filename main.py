@@ -2,6 +2,7 @@ import streamlit as st
 import random
 import uuid
 import time
+from streamlit_star_rating import st_star_rating
 
 
 def response_generator():
@@ -84,18 +85,25 @@ if not st.session_state.chats[st.session_state.current_chat]['rated']:
                            msg["role"] == "assistant"]
 
     if assistant_responses:
-        st.markdown("### Оцените наш сервис:")
 
-        rating_options = {}
-        for i in range(1, 6):
-            rating_options[i] = st.checkbox(f"{i}", key=f"rating_{i}")
-
-        for rating, selected in rating_options.items():
-            if selected:
+        def end_dialog(stars):
+            if stars:
                 st.session_state.chats[st.session_state.current_chat]['messages'].append(
-                    {"role": "user", "content": f"Ваша оценка диалогу: {rating}"}
+                    {"role": "user", "content": f"Ваша оценка диалогу: {stars}"}
                 )
                 st.session_state.chats[st.session_state.current_chat]['rated'] = True
+                st.balloons()
                 st.rerun()
+
+
+        stars = st_star_rating(
+            "Оцените ответ системы:",
+            maxValue=5,
+            defaultValue=0,
+            key="rating",
+            emoticons=True,
+            on_click=end_dialog
+        )
+
 else:
     st.info("Вы уже оценили этот чат, поэтому больше не можете отправлять сообщения.")
