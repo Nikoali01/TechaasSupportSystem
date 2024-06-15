@@ -2,7 +2,7 @@ import time
 
 from fastapi import APIRouter, HTTPException
 from app.database import get_next_ticket_id, create_ticket, find_ticket, update_ticket, add_ticket_message, \
-    change_ticket_answered
+    change_ticket_answered, find_tickets_by_user_id
 from app.models import Ticket, StartTicketRequest, CloseTicketRequest, AddMessageRequest, GetTicketAnswered
 
 auth_tokens = ["1234"]
@@ -19,6 +19,12 @@ async def return_ticket(request: StartTicketRequest):
         print(new_id)
         create_ticket(new_id, request.user_id)
         return {"ticket_id": new_id}
+
+
+@router.get("/{user_id}/tickets")
+async def return_tickets_by_user(user_id: str):
+    list_of_tickets = find_tickets_by_user_id(user_id)
+    return {"tickets": list_of_tickets}
 
 
 @router.get("/ticket/{ticket_id}")
@@ -83,7 +89,8 @@ async def get_updates(request: GetTicketAnswered):
         if ticket:
             if ticket["status"] != "Closed":
                 if ticket["user_id"] != request.user_id:
-                    raise HTTPException(status_code=403, detail="User is not allowed to check messages from this ticket")
+                    raise HTTPException(status_code=403,
+                                        detail="User is not allowed to check messages from this ticket")
                 else:
                     if not ticket["is_answered"]:
                         raise HTTPException(status_code=204, detail="Answer is not delivered yet")

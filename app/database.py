@@ -51,3 +51,9 @@ def add_ticket_message(ticket_id, message):
 
 def change_ticket_answered(ticket_id, is_answered):
     collection.update_one({"ticket_id": ticket_id}, {"$set": {"is_answered": is_answered}})
+
+
+def find_tickets_by_user_id(user_id):
+    tickets_cursor = collection.find({"user_id": user_id}, {"ticket_id": 1, "_id": 0})
+    ticket_ids = [ticket["ticket_id"] for ticket in tickets_cursor]
+    return ticket_ids
