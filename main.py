@@ -31,6 +31,10 @@ if "chat_disabled" not in ss:
     ss.chat_disabled = False
 if "rated" not in ss:
     ss.rated = False
+if "avatar" not in ss:
+    ss.avatar = ("https://biografiya-zvezd.ru/wp-content/uploads/2023/11/alblak-52-2.jpg")
+if "support_avatar" not in ss:
+    ss.support_avatar = "support.png"
 
 with st.sidebar:
     st.header("Ваши чаты")
@@ -64,7 +68,7 @@ with st.sidebar:
 st.subheader(f"Текущий чат: {ss.current_chat}")
 
 for message in ss.chats[ss.current_chat]['messages']:
-    with st.chat_message(message["role"]):
+    with st.chat_message(message["role"],avatar=ss.avatar if message["role"] == "user" else ss.support_avatar):
         st.markdown(message["content"])
 
 if not ss.chats[ss.current_chat]['rated']:
@@ -72,12 +76,12 @@ if not ss.chats[ss.current_chat]['rated']:
         if not ss.chat_disabled:
             ss.chats[ss.current_chat]['messages'].append(
                 {"role": "user", "content": prompt})
-            with st.chat_message("user"):
+            with st.chat_message("user",avatar=ss.avatar):
                 ss.chat_disabled = True
                 st.markdown(prompt)
                 st.rerun()
 
-        with st.chat_message("assistant"):
+        with st.chat_message(name="support",avatar=ss.support_avatar):
             with st.spinner("Thinking..."):
                 time.sleep(2)
             response_container = st.empty()
@@ -88,7 +92,7 @@ if not ss.chats[ss.current_chat]['rated']:
             ss.chat_disabled = False
             print("Acaseacr", ss.chat_disabled)
             ss.chats[ss.current_chat]['messages'].append(
-                {"role": "assistant", "content": response})
+                {"role": "support", "content": response})
             st.rerun()
 
 
@@ -98,13 +102,13 @@ else:
 
 if not ss.chats[ss.current_chat]['rated']:
     assistant_responses = [msg for msg in ss.chats[ss.current_chat]['messages'] if
-                           msg["role"] == "assistant"]
+                           msg["role"] == "support"]
     if assistant_responses:
 
         def end_dialog(stars):
             if stars:
                 ss.chats[ss.current_chat]['messages'].append(
-                    {"role": "user", "content": f"Ваша оценка диалогу: {stars}"}
+                    {"role": "user", "content": f"Ваша оценка диалогу: 52"}
                 )
                 ss.chats[ss.current_chat]['rated'] = True
                 st.rerun()
