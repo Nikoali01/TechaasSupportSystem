@@ -57,3 +57,15 @@ def find_tickets_by_user_id(user_id):
     tickets_cursor = collection.find({"user_id": user_id}, {"ticket_id": 1, "_id": 0})
     ticket_ids = [ticket["ticket_id"] for ticket in tickets_cursor]
     return ticket_ids
+
+
+def get_messages_from_ticket(ticket_id):
+    ticket = collection.find_one({"ticket_id": ticket_id})
+    messages = ticket["messages"]
+    response = []
+    for message in messages:
+        if message["from_"] == "ai":
+            response.append({"system": message["content"]})
+        else:
+            response.append({"user": message["content"]})
+    return response

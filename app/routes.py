@@ -2,8 +2,9 @@ import time
 
 from fastapi import APIRouter, HTTPException
 from app.database import get_next_ticket_id, create_ticket, find_ticket, update_ticket, add_ticket_message, \
-    change_ticket_answered, find_tickets_by_user_id
+    change_ticket_answered, find_tickets_by_user_id, get_messages_from_ticket
 from app.models import Ticket, StartTicketRequest, CloseTicketRequest, AddMessageRequest, GetTicketAnswered
+from app.processors import getAnswer
 
 auth_tokens = ["1234"]
 
@@ -73,6 +74,18 @@ async def add_message(request: AddMessageRequest):
                 }
                 add_ticket_message(request.ticket_id, message)
                 change_ticket_answered(request.ticket_id, False)
+                messages = get_messages_from_ticket(request.ticket_id)
+                print(messages)
+                answerr = getAnswer.work(messages)
+                resp_message = {
+                    "from_": "ai",
+                    "to_": "user",
+                    "content": answerr["message"],
+                    "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "message_id": str(int(last_message_id) + 2)
+                }
+                add_ticket_message(request.ticket_id, resp_message)
+                change_ticket_answered(request.ticket_id, True)
                 return {"message": "Message added successfully"}
             else:
                 raise HTTPException(status_code=403, detail="The ticket is closed")
