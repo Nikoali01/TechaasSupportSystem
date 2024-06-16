@@ -85,6 +85,10 @@ services:
     container_name: atom_ml_server
     image: ghcr.io/ggerganov/llama.cpp:server
     command: -mu ${MODEL_URL} -c 2048 --host 0.0.0.0 --port 8080
+    deploy:
+      resources:
+        limits:
+          cpus: '0.8'
     expose:
       - "8080"
 
