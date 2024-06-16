@@ -1,10 +1,8 @@
 import streamlit as st
-import random
 import uuid
 import httpx
 import time
 from streamlit_star_rating import st_star_rating
-from streamlit_cookies_manager import EncryptedCookieManager
 from streamlit import session_state as ss
 
 
@@ -50,16 +48,18 @@ class API:
         return self._request("POST", endpoint,
                              json={"user_id": user_id, "ticket_id": ticket_id, "access_token": access_token})
 
+    def delete_ticket(self, ticket_id, access_token):
+        endpoint = f"/ticket/delete"
+        return self._request("PATCH", endpoint, json={"ticket_id": ticket_id, "access_token": access_token})
 
-# api = API("http://localhost:8000")
 
-@st.cache_data()
+api = API("http://localhost:8000")
+
+
+@st.cache_data
 def get_session_id():
     return str(uuid.uuid4())
 
-
-if 'session_id' not in st.session_state:
-    st.session_state.session_id = get_session_id()
 
 user_id = get_session_id()
 access_token = "1234"
@@ -78,8 +78,6 @@ def create_ticket():
     resp = api.start_ticket(user_id, access_token)
     if resp.status_code == 200:
         resp = resp.json()
-        print(resp)
-        print(user_id)
         ss.chats[resp['ticket_id']] = {'rated': False, 'messages': []}
         ss.current_chat = resp['ticket_id']
     else:
@@ -90,23 +88,24 @@ st.title("Чат техподдержки")
 
 if "chats" not in ss:
     ss.chats = {}
-    print("I'm here!")
     all_tickets = api.get_tickets(user_id)
     if all_tickets.status_code == 200:
         for ticket_id in all_tickets.json()['tickets']:
             ticket = api.get_ticket(ticket_id)
             if ticket.status_code == 200:
                 ticket = ticket.json()
-                print(ticket)
-                pre_messages = ticket['messages']
-                messages = []
-                for i in pre_messages:
-                    messages.append({"role": "user" if i['from_'] == "user" else "support", "content": i['content']})
-                ss.chats[ticket_id] = {'rated': True if ticket['status'].lower() == "closed" else False,
-                                       'messages': messages}
+                if ticket['status'].lower() != 'deleted':
+                    pre_messages = ticket['messages']
+                    messages = []
+                    for i in pre_messages:
+                        messages.append(
+                            {"role": "user" if i['from_'] == "user" else "support", "content": i['content']})
+                    if ticket['status'].lower() == 'closed':
+                        messages.append({"role": "user", "content": f"Ваша оценка диалогу: {ticket['user_rating']}"})
+                    ss.chats[ticket_id] = {'rated': True if ticket['status'].lower() == "closed" else False,
+                                           'messages': messages}
 if "current_chat" not in ss:
     if ss.chats:
-        print(ss.chats)
         ss.current_chat = list(ss.chats.keys())[0]
     else:
         create_ticket()
@@ -145,6 +144,7 @@ with col2:
             prev_key = all_chats[index_to_delete - 1]
         else:
             prev_key = all_chats[1]
+        api.delete_ticket(ss.current_chat, access_token)
         del ss.chats[ss.current_chat]
         ss.current_chat = prev_key
         st.rerun()
@@ -156,15 +156,13 @@ for message in ss.chats[ss.current_chat]['messages']:
 if not ss.chats[ss.current_chat]['rated']:
     if prompt := st.chat_input("Ваше сообщение", disabled=ss.chat_disabled) or ss.chat_disabled:
         if not ss.chat_disabled:
-            print(prompt, user_id, ss.current_chat)
-            resp = api.add_message(user_id, ss.current_chat, prompt, access_token)
-            if resp.status_code == 200:
-                ss.chats[ss.current_chat]['messages'].append(
-                    {"role": "user", "content": prompt})
-                with st.chat_message("user", avatar=ss.avatar):
-                    ss.chat_disabled = True
-                    st.markdown(prompt)
-                    st.rerun()
+            api.add_message(user_id, ss.current_chat, prompt, access_token)
+            ss.chats[ss.current_chat]['messages'].append(
+                {"role": "user", "content": prompt})
+            with st.chat_message("user", avatar=ss.avatar):
+                ss.chat_disabled = True
+                st.markdown(prompt)
+                st.rerun()
 
         with st.chat_message(name="support", avatar=ss.support_avatar):
             with st.spinner("Печатает..."):
@@ -201,15 +199,14 @@ if not ss.chats[ss.current_chat]['rated'] and not ss.chat_disabled:
         def end_dialog(stars):
             if stars:
                 prompt = f"Ваша оценка диалогу: {stars}"
-                resp = api.add_message(user_id, ss.current_chat, prompt, access_token)
+                api.add_message(user_id, ss.current_chat, prompt, access_token)
+                resp = api.close_ticket(ss.current_chat, stars, access_token)
                 if resp.status_code == 200:
-                    resp = api.close_ticket(ss.current_chat, stars, access_token)
-                    if resp.status_code == 200:
-                        ss.chats[ss.current_chat]['messages'].append(
-                            {"role": "user", "content": prompt}
-                        )
-                        ss.chats[ss.current_chat]['rated'] = True
-                        st.rerun()
+                    ss.chats[ss.current_chat]['messages'].append(
+                        {"role": "user", "content": prompt}
+                    )
+                    ss.chats[ss.current_chat]['rated'] = True
+                    st.rerun()
 
 
         st_star_rating(
