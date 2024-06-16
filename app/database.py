@@ -1,9 +1,10 @@
+import os
 import time
 from pymongo import MongoClient
 from bson import ObjectId
 
-uri = "mongodb://localhost:27017"
-client = MongoClient(uri)
+base_url = os.getenv("MONGODB_URL", default="mongodb://localhost:27017")
+client = MongoClient(base_url)
 db = client['requests']
 collection = db['requestsCollection']
 

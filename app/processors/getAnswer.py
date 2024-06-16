@@ -1,9 +1,12 @@
+import os
 import threading
 import time
 import requests
 
+
 def send_question(messages):
-    url = "http://127.0.0.1:7000/ticket/answer"
+    base_url = os.getenv("API_URL_ML", default="http://127.0.0.1:7000")
+    url = base_url + "/ticket/answer"
     payload = {
         "messages": messages
     }
