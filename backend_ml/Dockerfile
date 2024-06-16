@@ -1,4 +1,4 @@
-FROM python:3.12-slim-bullseye as python-base
+FROM python:3.12.4-slim-bullseye as python-base
 
 WORKDIR /app
 COPY . .
@@ -18,7 +18,7 @@ RUN poetry install --no-dev
 RUN poetry export -f requirements.txt >> requirements.txt
 
 # Create a new stage from the base python image
-FROM python:3.12-slim-bullseye as runtime
+FROM python:3.12.4-slim-bullseye as runtime
 
 WORKDIR /app
 
