@@ -47,3 +47,8 @@ class GetTicketAnswered(BaseModel):
     user_id: str
     ticket_id: str
     access_token: str
+
+
+class DeleteTicketRequest(BaseModel):
+    ticket_id: str
+    access_token: str

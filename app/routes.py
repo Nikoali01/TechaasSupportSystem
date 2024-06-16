@@ -3,7 +3,8 @@ import time
 from fastapi import APIRouter, HTTPException
 from app.database import get_next_ticket_id, create_ticket, find_ticket, update_ticket, add_ticket_message, \
     change_ticket_answered, find_tickets_by_user_id, get_messages_from_ticket
-from app.models import Ticket, StartTicketRequest, CloseTicketRequest, AddMessageRequest, GetTicketAnswered
+from app.models import Ticket, StartTicketRequest, CloseTicketRequest, AddMessageRequest, GetTicketAnswered, \
+    DeleteTicketRequest
 from app.processors import getAnswer
 
 auth_tokens = ["1234"]
@@ -89,6 +90,19 @@ async def add_message(request: AddMessageRequest):
                 return {"message": "Message added successfully"}
             else:
                 raise HTTPException(status_code=403, detail="The ticket is closed")
+        else:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+
+
+@router.patch("/ticket/delete")
+async def delete_ticket(request: DeleteTicketRequest):
+    if request.access_token not in auth_tokens:
+        raise HTTPException(status_code=403, detail="You are not allowed to do this action")
+    else:
+        ticket = find_ticket(request.ticket_id)
+        if ticket:
+            update_ticket(request.ticket_id, {"status": "Deleted"})
+            return {"message": "Ticket deleted successfully"}
         else:
             raise HTTPException(status_code=404, detail="Ticket not found")
 
