@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "techaas-support-ml-api"
+version = "0.1.0"
+description = ""
+authors = ["emapfff <dvlemil_777@mail.ru>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.12.4"
+nltk = "^3.8.1"
+langchain-community = "^0.2.5"
+langchain = "^0.2.5"
+fitz = "^0.0.1.dev2"
+frontend = "^0.0.3"
+pymupdf = "^1.24.5"
+pillow = "^10.3.0"
+langchain-huggingface = "^0.0.3"
+chromadb = "^0.5.0"
+unstructured = "^0.14.6"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
