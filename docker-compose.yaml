@@ -23,7 +23,7 @@ services:
     container_name: atom_main_frontend
     build:
       context: frontend
-      dockerfile: frontend/Dockerfile
+      dockerfile: ./Dockerfile
     labels:
       traefik.enable: "True"
       traefik.http.routers.atom_main_frontend.rule: Host(`atom.techaas.tech`)
@@ -41,7 +41,7 @@ services:
     container_name: atom_main_backend
     build:
       context: backend
-      dockerfile: Dockerfile
+      dockerfile: ./Dockerfile
     labels:
       traefik.enable: true
       traefik.http.routers.atom_main_backend.rule: Host(`api.atom.techaas.tech`)
@@ -71,7 +71,7 @@ services:
     container_name: atom_ml_backend
     build:
       context: backend_ml
-      dockerfile: backend_ml/Dockerfile
+      dockerfile: ./Dockerfile
     env_file:
       - .env
     depends_on:
