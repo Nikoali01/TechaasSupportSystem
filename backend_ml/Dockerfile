@@ -29,7 +29,7 @@ COPY --from=python-base /app/requirements.txt .
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Expose port of container
-EXPOSE 8000
+EXPOSE 7000
 
 # Run Application
 CMD python run clean_and_chroma.py
