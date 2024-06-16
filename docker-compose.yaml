@@ -1,0 +1,98 @@
+version: '3'
+
+
+networks:
+  atom_network:
+    external: false
+
+services:
+  traefik:
+    image: docker.io/traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    networks:
+      - atom_network
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /stack/traefik:/etc/traefik
+      - /run/docker.sock:/var/run/docker.sock:ro
+
+  atom_main_frontend:
+    container_name: atom_main_frontend
+    build:
+      context: frontend
+      dockerfile: Dockerfile
+    labels:
+      traefik.enable: "True"
+      traefik.http.routers.atom_main_frontend.rule: Host(`atom.techaas.tech`)
+      traefik.http.routers.atom_main_frontend.entrypoints: web
+      traefik.http.routers.atom_main_frontend.tls: "True"
+      traefik.http.routers.atom_main_frontend.tls.certresolver: prod
+    env_file:
+      - .env
+    depends_on:
+      - atom_main_backend
+    networks:
+      - atom_network
+
+  atom_main_backend:
+    container_name: atom_main_backend
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    labels:
+      traefik.enable: true
+      traefik.http.routers.atom_main_backend.rule: Host(`api.atom.techaas.tech`)
+      traefik.http.routers.atom_main_backend.entrypoints: websecure
+      traefik.http.routers.atom_main_backend.tls: true
+      traefik.http.routers.atom_main_backend.tls.certResolver: prod
+    env_file:
+      - .env
+    depends_on:
+      - atom_ml_backend
+    networks:
+      - atom_network
+
+  atom_ml_chroma:
+    container_name: atom_ml_chroma
+    image: chromadb/chroma:latest
+    volumes:
+      - ./chroma:/chroma/chroma
+    depends_on:
+      - atom_ml_server
+    networks:
+      - atom_network
+    expose:
+      - "8000"
+
+  atom_ml_backend:
+    container_name: atom_ml_backend
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    depends_on:
+      - atom_ml_chroma
+      - atom_ml_server
+      - mongodb
+    networks:
+      - atom_network
+
+  atom_ml_server:
+    container_name: atom_ml_server
+    image: ghcr.io/ggerganov/llama.cpp:server
+    command: -mu ${MODEL_URL} -c 2048 --host 0.0.0.0 --port 8080
+    expose:
+      - "8080"
+
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    restart: unless-stopped
+    networks:
+      - atom_network
+    volumes:
+      - ./db:/data/db
