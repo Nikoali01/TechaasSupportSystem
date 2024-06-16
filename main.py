@@ -51,14 +51,15 @@ class API:
                              json={"user_id": user_id, "ticket_id": ticket_id, "access_token": access_token})
 
 
-api = API("http://localhost:8000")
+# api = API("http://localhost:8000")
 
-
+@st.cache_data()
 def get_session_id():
-    if 'session_id' not in st.session_state:
-        st.session_state.session_id = str(uuid.uuid4())
-    return st.session_state.session_id
+    return str(uuid.uuid4())
 
+
+if 'session_id' not in st.session_state:
+    st.session_state.session_id = get_session_id()
 
 user_id = get_session_id()
 access_token = "1234"
