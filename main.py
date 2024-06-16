@@ -4,6 +4,7 @@ import httpx
 import time
 from streamlit_star_rating import st_star_rating
 from streamlit import session_state as ss
+from os import getenv
 
 
 class API:
@@ -53,7 +54,7 @@ class API:
         return self._request("PATCH", endpoint, json={"ticket_id": ticket_id, "access_token": access_token})
 
 
-api = API("http://localhost:8000")
+api = API(getenv("API_URL", default="http://localhost:8000"))
 
 
 @st.cache_data
@@ -62,7 +63,7 @@ def get_session_id():
 
 
 user_id = get_session_id()
-access_token = "1234"
+access_token = getenv("ACCESS_TOKEN", default="1234")
 
 
 def response_generator(response):
